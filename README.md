@@ -142,14 +142,36 @@ export default WeatherButton;
 
 ```
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const Welcome = () => {
+const WeatherButton = () => {
+    const navigate = useNavigate();
+
+    const handleClick = async () => {
+        try {
+            const response = await fetch('http://localhost:3000/check-entitlement', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ entitlement: 'developer' }),
+            });
+            if (response.ok) {
+                navigate('/welcome');
+            } else {
+                console.error('Entitlement check failed.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
     return (
         <div>
-            <h1>Welcome to Weather Service</h1>
+            <button onClick={handleClick}>Weather</button>
         </div>
     );
 };
 
-export default Welcome;
+export default WeatherButton;;
 ```
