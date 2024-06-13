@@ -140,7 +140,7 @@ const WeatherButton = () => {
 
 export default WeatherButton;
 
-
+```
 import React from 'react';
 
 const Welcome = () => {
@@ -152,3 +152,4 @@ const Welcome = () => {
 };
 
 export default Welcome;
+```
