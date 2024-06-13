@@ -2,19 +2,7 @@
 
 This repository contaions the complete code for Stellar Classification - Stars, Galaxies and Quasars. An ensemble of multiple boosting and bagging classifiers and a snapshot ensembled ANN, with their weights being determined by an analysis of their respective confusion matrices, F-1 scores, and accuracies has been used.
 
-const fs = require('fs');
-
-// Function to load JSON data from a file
-function loadJson(filePath) {
-    const rawData = fs.readFileSync(filePath);
-    const data = JSON.parse(rawData);
-    return data;
-}
-
-// Function to fetch entitlements for a given username
-function getEntitlements(data, username) {
-    for (const entry of data.Entitlements) {
-        if (entry.username === username) {
+ pp=== username) {
             return entry.entitlements;
         }
     }
@@ -41,16 +29,69 @@ function logCurrentTimestamp() {
 
 // Example usage
 const filePath = 'path/to/your/file.json';
-const username = 'abc';
+const usern
 
-logCurrentTimestamp();
+var express = require('express');
+var app = express();
+var server = require('http').createServer(app);
 
-const data = loadJson(filePath);
-const entitlements = getEntitlements(data, username);
-const lastEntitlement = getLastEntitlement(data, username);
+// Object to store user groups
+var userGroupsMap = {};
 
-console.log(`Entitlements for ${username}:`, entitlements);
-if (lastEntitlement !== null) {
-    console.log(`Last entitlement for ${username}:`, lastEntitlement);
-} else {
-    console.log(`No entitlements found for ${username}.`);
+app.use(function (req, res, next) {
+  var nodeSSPI = require('node-sspi');
+  var nodeSSPIObj = new nodeSSPI({
+    retrieveGroups: true,
+  });
+  nodeSSPIObj.authenticate(req, res, function (err) {
+    if (!res.finished) {
+      // Store user groups in the userGroupsMap object
+      if (req.connection.user && req.connection.userGroups) {
+        userGroupsMap[req.connection.user] = req.connection.userGroups;
+      }
+      next();
+    }
+  });
+});
+
+app.use(function (req, res, next) {
+  if (req.connection.user) {
+    var out =
+      'Hello ' +
+      req.connection.user +
+      '! Your sid is ' +
+      req.connection.userSid +
+      ' and you belong to the following groups:<br/><ul>';
+    if (req.connection.userGroups) {
+      for (var i in req.connection.userGroups) {
+        out += '<li>' + req.connection.userGroups[i] + '</li><br/>\n';
+      }
+    }
+    out += '</ul>';
+    res.send(out);
+  } else {
+    res.send('User not authenticated');
+  }
+});
+
+// Handle GET requests to check entitlements
+app.get('/check-entitlement', function (req, res) {
+  var user = req.connection.user;
+  var entitlement = req.query.entitlement;
+
+  if (!user) {
+    res.status(401).send('User not authenticated');
+    return;
+  }
+
+  var userGroups = userGroupsMap[user];
+
+  if (userGroups && userGroups.includes(entitlement)) {
+    res.send(`User ${user} has the entitlement ${entitlement}`);
+  } else {
+    res.status(403).send(`User ${user} does not have the entitlement ${entitlement}`);
+  }
+});
+
+// Start server
+var port = process⬤
