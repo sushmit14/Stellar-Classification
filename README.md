@@ -91,7 +91,64 @@ app.get('/check-entitlement', function (req, res) {
   } else {
     res.status(403).send(`User ${user} does not have the entitlement ${entitlement}`);
   }
-});
+})
 
-// Start server
-var port = process⬤
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import WeatherButton from './WeatherButton';
+import Welcome from './Welcome';
+
+function App() {
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<WeatherButton />} />
+                <Route path="/welcome" element={<Welcome />} />
+            </Routes>
+        </Router>
+    );
+}
+
+export default App;
+
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const WeatherButton = () => {
+    const navigate = useNavigate();
+
+    const handleClick = async () => {
+        try {
+            const response = await fetch('http://localhost:3000/check-entitlement');
+            if (response.ok) {
+                navigate('/welcome');
+            } else {
+                console.error('Entitlement check failed.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    return (
+        <div>
+            <button onClick={handleClick}>Weather</button>
+        </div>
+    );
+};
+
+export default WeatherButton;
+
+
+import React from 'react';
+
+const Welcome = () => {
+    return (
+        <div>
+            <h1>Welcome to Weather Service</h1>
+        </div>
+    );
+};
+
+export default Welcome;
