@@ -141,7 +141,7 @@ const WeatherButton = () => {
 export default WeatherButton;
 
 ```
-const ps = require('ps-node');
+const { exec } = require('child_process');
 const os = require('os');
 
 // Dictionary to store process information
@@ -163,34 +163,42 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Function to check for actively running .exe processes
-const checkRunningExe = () => {
-  ps.lookup({ command: '.exe', psargs: 'ux' }, (err, resultList) => {
-    if (err) {
-      throw new Error(err);
+// Function to detect new processes
+const detectNewProcesses = () => {
+  exec('powershell "Get-WinEvent -LogName Security | Where-Object {$_.Id -eq 4688} | Select-Object TimeCreated, Properties | Select-String \'.exe\'"', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return;
+    }
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+      return;
     }
 
-    resultList.forEach((process) => {
-      const exeName = process.command.split('\\').pop();
-      if (!processDictionary[exeName]) {
-        const timestamp = new Date();
-        const time = formatTime(timestamp);
-        const date = formatDate(timestamp);
-        const user = os.userInfo().username;
-
-        processDictionary[exeName] = {
-          user,
-          time,
-          date,
-        };
-
-        console.log(`New exe detected: ${exeName}`);
-        console.log('Process Dictionary:', processDictionary);
+    const events = stdout.split('\n');
+    events.forEach(event => {
+      const timestamp = new Date();
+      const time = formatTime(timestamp);
+      const date = formatDate(timestamp);
+      const user = os.userInfo().username;
+      const match = event.match(/NewProcessName\s*:\s*(.*?\.exe)/i);
+      if (match) {
+        const exeName = match[1].trim();
+        if (!processDictionary[exeName]) {
+          processDictionary[exeName] = {
+            user,
+            time,
+            date
+          };
+          console.log(`New exe detected: ${exeName}`);
+          console.log('Process Dictionary:', processDictionary);
+        }
       }
     });
   });
 };
 
 // Periodically check for new processes
-setInterval(checkRunningExe, 5000);
+setInterval(detectNewProcesses, 5000); // Adjust interval as needed
+
 ```
