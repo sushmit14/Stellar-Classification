@@ -141,7 +141,7 @@ const WeatherButton = () => {
 export default WeatherButton;
 
 ```
-const { exec } = require('child_process');
+const { watchProcessTree } = require('windows-process-tree');
 const os = require('os');
 
 // Dictionary to store process information
@@ -163,42 +163,23 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Function to detect new processes
-const detectNewProcesses = () => {
-  exec('powershell "Get-WinEvent -LogName Security | Where-Object {$_.Id -eq 4688} | Select-Object TimeCreated, Properties | Select-String \'.exe\'"', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`stderr: ${stderr}`);
-      return;
-    }
+// Watch for new process creations
+watchProcessTree({ includeSelf: false }, (process) => {
+  const timestamp = new Date();
+  const time = formatTime(timestamp);
+  const date = formatDate(timestamp);
+  const user = os.userInfo().username;
 
-    const events = stdout.split('\n');
-    events.forEach(event => {
-      const timestamp = new Date();
-      const time = formatTime(timestamp);
-      const date = formatDate(timestamp);
-      const user = os.userInfo().username;
-      const match = event.match(/NewProcessName\s*:\s*(.*?\.exe)/i);
-      if (match) {
-        const exeName = match[1].trim();
-        if (!processDictionary[exeName]) {
-          processDictionary[exeName] = {
-            user,
-            time,
-            date
-          };
-          console.log(`New exe detected: ${exeName}`);
-          console.log('Process Dictionary:', processDictionary);
-        }
-      }
-    });
-  });
-};
-
-// Periodically check for new processes
-setInterval(detectNewProcesses, 5000); // Adjust interval as needed
+  const exeName = process.imageName.toLowerCase();
+  if (!processDictionary[exeName]) {
+    processDictionary[exeName] = {
+      user,
+      time,
+      date
+    };
+    console.log(`New exe detected: ${exeName}`);
+    console.log('Process Dictionary:', processDictionary);
+  }
+});
 
 ```
