@@ -142,7 +142,7 @@ export default WeatherButton;
 
 ```
 const os = require('os');
-const { ProcessWatcher } = require('windows-processes');
+const EventLog = require('windows-eventlog').EventLog;
 
 // Dictionary to store process information
 const processDictionary = {};
@@ -163,41 +163,33 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Create a process watcher instance
-const watcher = new ProcessWatcher();
+// Create an EventLog instance
+const eventLog = new EventLog('Security');
 
-// Listen for new process events
-watcher.on('created', (process) => {
-  const exeName = process.name.toLowerCase();
-  if (!processDictionary[exeName] && exeName.endsWith('.exe')) {
-    const timestamp = new Date();
-    const time = formatTime(timestamp);
-    const date = formatDate(timestamp);
-    const user = os.userInfo().username;
+// Listen for new event log entries
+eventLog.on('event', (event) => {
+  if (event.EventID === 4688) { // Event ID for process creation
+    const exeName = event.InsertionStrings[6].toLowerCase(); // Extract the process name
+    if (!processDictionary[exeName] && exeName.endsWith('.exe')) {
+      const timestamp = new Date();
+      const time = formatTime(timestamp);
+      const date = formatDate(timestamp);
+      const user = os.userInfo().username;
 
-    processDictionary[exeName] = {
-      user,
-      time,
-      date,
-    };
+      processDictionary[exeName] = {
+        user,
+        time,
+        date,
+      };
 
-    console.log(`New exe detected: ${exeName}`);
-    console.log('Process Dictionary:', processDictionary);
+      console.log(`New exe detected: ${exeName}`);
+      console.log('Process Dictionary:', processDictionary);
+    }
   }
 });
 
-// Start monitoring processes
-watcher.start();
-
-// Handle errors
-watcher.on('error', (error) => {
-  console.error('Process watcher error:', error);
-});
-
-// Stop the watcher on process exit
-process.on('exit', () => {
-  watcher.stop();
-});
+// Start listening to the event log
+eventLog.start();
 
 
 ```
