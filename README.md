@@ -1,4 +1,4 @@
-# Stellar-Classification
+use# Stellar-Classification
 
 This repository contaions the complete code for Stellar Classification - Stars, Galaxies and Quasars. An ensemble of multiple boosting and bagging classifiers and a snapshot ensembled ANN, with their weights being determined by an analysis of their respective confusion matrices, F-1 scores, and accuracies has been used.
 
@@ -141,37 +141,56 @@ const WeatherButton = () => {
 export default WeatherButton;
 
 ```
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+const ps = require('ps-node');
+const os = require('os');
 
-const WeatherButton = () => {
-    const navigate = useNavigate();
+// Dictionary to store process information
+const processDictionary = {};
 
-    const handleClick = async () => {
-        try {
-            const response = await fetch('http://localhost:3000/check-entitlement', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ entitlement: 'developer' }),
-            });
-            if (response.ok) {
-                navigate('/welcome');
-            } else {
-                console.error('Entitlement check failed.');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    };
-
-    return (
-        <div>
-            <button onClick={handleClick}>Weather</button>
-        </div>
-    );
+// Function to get current timestamp in hh:mm:ss format
+const formatTime = (date) => {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
 };
 
-export default WeatherButton;;
+// Function to get current date in YYYY-MM-DD format
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Function to check for actively running .exe processes
+const checkRunningExe = () => {
+  ps.lookup({ command: '.exe', psargs: 'ux' }, (err, resultList) => {
+    if (err) {
+      throw new Error(err);
+    }
+
+    resultList.forEach((process) => {
+      const exeName = process.command.split('\\').pop();
+      if (!processDictionary[exeName]) {
+        const timestamp = new Date();
+        const time = formatTime(timestamp);
+        const date = formatDate(timestamp);
+        const user = os.userInfo().username;
+
+        processDictionary[exeName] = {
+          user,
+          time,
+          date,
+        };
+
+        console.log(`New exe detected: ${exeName}`);
+        console.log('Process Dictionary:', processDictionary);
+      }
+    });
+  });
+};
+
+// Periodically check for new processes
+setInterval(checkRunningExe, 5000);
 ```
