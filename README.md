@@ -141,8 +141,8 @@ const WeatherButton = () => {
 export default WeatherButton;
 
 ```
-const { watchProcessTree } = require('windows-process-tree');
 const os = require('os');
+const { ProcessWatcher } = require('windows-processes');
 
 // Dictionary to store process information
 const processDictionary = {};
@@ -163,23 +163,41 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Watch for new process creations
-watchProcessTree({ includeSelf: false }, (process) => {
-  const timestamp = new Date();
-  const time = formatTime(timestamp);
-  const date = formatDate(timestamp);
-  const user = os.userInfo().username;
+// Create a process watcher instance
+const watcher = new ProcessWatcher();
 
-  const exeName = process.imageName.toLowerCase();
-  if (!processDictionary[exeName]) {
+// Listen for new process events
+watcher.on('created', (process) => {
+  const exeName = process.name.toLowerCase();
+  if (!processDictionary[exeName] && exeName.endsWith('.exe')) {
+    const timestamp = new Date();
+    const time = formatTime(timestamp);
+    const date = formatDate(timestamp);
+    const user = os.userInfo().username;
+
     processDictionary[exeName] = {
       user,
       time,
-      date
+      date,
     };
+
     console.log(`New exe detected: ${exeName}`);
     console.log('Process Dictionary:', processDictionary);
   }
 });
+
+// Start monitoring processes
+watcher.start();
+
+// Handle errors
+watcher.on('error', (error) => {
+  console.error('Process watcher error:', error);
+});
+
+// Stop the watcher on process exit
+process.on('exit', () => {
+  watcher.stop();
+});
+
 
 ```
