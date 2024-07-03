@@ -4,82 +4,48 @@ This repository contaions the complete code for Stellar Classification - Stars, 
 
 ```
 import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
 
-const EntitlementTable = ({ entitlements }) => {
-  const [expandedRow, setExpandedRow] = useState(null);
+const DropdownComponent = () => {
+    const [selectedHour, setSelectedHour] = useState('');
+    const [selectedDay, setSelectedDay] = useState('');
 
-  const handleRowClick = (index) => {
-    setExpandedRow(expandedRow === index ? null : index);
-  };
+    const handleHourChange = (event) => {
+        setSelectedHour(event.target.value);
+    };
 
-  return (
-    <table border="1">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Type</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entitlements.map((entitlement, index) => (
-          <React.Fragment key={entitlement.id}>
-            <tr onClick={() => handleRowClick(index)}>
-              <td>{entitlement.id}</td>
-              <td>{entitlement.name}</td>
-              <td>{entitlement.type}</td>
-            </tr>
-            {expandedRow === index && (
-              <tr>
-                <td colSpan="3">
-                  <div>
-                    <p><strong>Details:</strong></p>
-                    <p>Description: {entitlement.description}</p>
-                    <p>Start Date: {entitlement.startDate}</p>
-                    <p>End Date: {entitlement.endDate}</p>
-                    {/* Add more details as needed */}
-                  </div>
-                </td>
-              </tr>
-            )}
-          </React.Fragment>
-        ))}
-      </tbody>
-    </table>
-  );
+    const handleDayChange = (event) => {
+        setSelectedDay(event.target.value);
+    };
+
+    return (
+        <div>
+            <label>
+                Hours:
+                <select value={selectedHour} onChange={handleHourChange}>
+                    <option value="">Select Hours</option>
+                    <option value="1hour">1 Hour</option>
+                    <option value="6hours">6 Hours</option>
+                    <option value="12hours">12 Hours</option>
+                    <option value="24hours">24 Hours</option>
+                </select>
+            </label>
+            <br />
+            <label>
+                Days:
+                <select value={selectedDay} onChange={handleDayChange}>
+                    <option value="">Select Days</option>
+                    <option value="1day">1 Day</option>
+                    <option value="2days">2 Days</option>
+                    <option value="5days">5 Days</option>
+                    <option value="14days">14 Days</option>
+                    <option value="45days">45 Days</option>
+                </select>
+            </label>
+        </div>
+    );
 };
 
-const App = () => {
-  const entitlements = [
-    {
-      id: 1,
-      name: 'Entitlement 1',
-      type: 'Type A',
-      description: 'Description of Entitlement 1',
-      startDate: '2023-01-01',
-      endDate: '2023-12-31'
-    },
-    {
-      id: 2,
-      name: 'Entitlement 2',
-      type: 'Type B',
-      description: 'Description of Entitlement 2',
-      startDate: '2023-01-01',
-      endDate: '2023-12-31'
-    }
-    // Add more entitlements as needed
-  ];
-
-  return (
-    <div>
-      <h1>Entitlements</h1>
-      <EntitlementTable entitlements={entitlements} />
-    </div>
-  );
-};
-
-ReactDOM.render(<App />, document.getElementById('root'));
+export default DropdownComponent;
 
 
 ```
