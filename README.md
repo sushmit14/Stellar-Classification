@@ -3,105 +3,109 @@ use# Stellar-Classification
 This repository contaions the complete code for Stellar Classification - Stars, Galaxies and Quasars. An ensemble of multiple boosting and bagging classifiers and a snapshot ensembled ANN, with their weights being determined by an analysis of their respective confusion matrices, F-1 scores, and accuracies has been used.
 
 ```
-import React, { useState } from 'react';
+     from flask import Flask, request, jsonify
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+import matplotlib.pyplot as plt
+import pyodbc
 
-const DropdownComponent = () => {
-    const [selectedHour, setSelectedHour] = useState('');
-    const [selectedDay, setSelectedDay] = useState('');
+# Flask application setup
+app = Flask(__name__)
 
-    const handleHourChange = (event) => {
-        setSelectedHour(event.target.value);
-    };
+# Function to fetch data from MS SQL Server using connection string
+def fetch_data_from_sql(accountAccessID, conn_str):
+    # Establish connection
+    conn = pyodbc.connect(conn_str)
+    
+    # Example query, replace with your actual query
+    query = f"SELECT accessTime FROM login_data WHERE accountAccessID = '{accountAccessID}'"
+    df = pd.read_sql(query, conn)
+    
+    conn.close()
+    return df
 
-    const handleDayChange = (event) => {
-        setSelectedDay(event.target.value);
-    };
+# Function to perform outlier detection using Isolation Forest
+def detect_outliers(data):
+    # Feature engineering: convert to hours
+    data['hour'] = data['accessTime'].dt.hour
+    
+    # Train Isolation Forest model
+    model = IsolationForest(contamination=0.1)  # Adjust contamination based on expected outlier percentage
+    model.fit(data[['hour']])
+    
+    # Predict outliers
+    data['anomaly'] = model.predict(data[['hour']])
+    
+    # Detected outliers
+    detected_outliers = data[data['anomaly'] == -1]
+    return detected_outliers
 
-    return (
-        <div>
-            <label>
-                Hours:
-                <select value={selectedHour} onChange={handleHourChange}>
-                    <option value="">Select Hours</option>
-                    <option value="1hour">1 Hour</option>
-                    <option value="6hours">6 Hours</option>
-                    <option value="12hours">12 Hours</option>
-                    <option value="24hours">24 Hours</option>
-                </select>
-            </label>
-            <br />
-            <label>
-                Days:
-                <select value={selectedDay} onChange={handleDayChange}>
-                    <option value="">Select Days</option>
-                    <option value="1day">1 Day</option>
-                    <option value="2days">2 Days</option>
-                    <option value="5days">5 Days</option>
-                    <option value="14days">14 Days</option>
-                    <option value="45days">45 Days</option>
-                </select>
-            </label>
-        </div>
-    );
-};
+# Flask route to handle POST requests
+@app.route('/detect_outliers', methods=['POST'])
+def handle_post_request():
+    # Get accountAccessID from POST request
+    accountAccessID = request.json['accountAccessID']
+    
+    # Replace with your MS SQL Server connection string
+    conn_str = 'DRIVER={SQL Server};SERVER=your_server_name;DATABASE=your_database_name;UID=your_username;PWD=your_password'
+    
+    # Fetch data from MS SQL Server based on accountAccessID
+    data = fetch_data_from_sql(accountAccessID, conn_str)
+    
+    # Perform outlier detection using Isolation Forest
+    detected_outliers = detect_outliers(data)
+    
+    # Convert detected outliers to JSON format
+    outliers_json = detected_outliers.to_json(orient='records')
+    
+    # Return JSON response with detected outliers
+    return jsonify(outliers_json)
 
-export default DropdownComponent;
-
+if __name__ == '__main__':
+    app.run(debug=True, port =6000)
 
 ```
 ```
-const express = require('express');
-const bodyParser = require('body-parser');
+const { faker } = require('@faker-js/faker');
 
-// Create an Express application
-const app = express();
-const port = 3000;
 
-// Use body-parser middleware to parse JSON bodies
-app.use(bodyParser.json());
-
-const queueElements = []; // Array to hold current elements in the queue
-
-// Function to add key-value pairs to the queue
-function enqueue(username, entitlement) {
-    const element = { username, entitlement };
-    queueElements.push(element);
-    processQueue();
-}
-
-// Function to process the queue
-function processQueue() {
-    if (queueElements.length > 0) {
-        const element = queueElements[0];
-        setTimeout(() => {
-            console.log(`Processed ${element.username}: ${element.entitlement}`);
-            queueElements.shift(); // Remove the processed element
-            processQueue(); // Process the next element
-        }, 1000); // Simulate an asynchronous job
+// Function to generate random login time between 10 AM and 8 PM
+function generateRandomTime() {
+    const startHour = 10;
+    const endHour = 20;
+  
+    const hour = faker.datatype.number({ min: startHour, max: endHour - 1 });
+    const minute = faker.datatype.number({ min: 0, max: 59 });
+    const second = faker.datatype.number({ min: 0, max: 59 });
+  
+    return new Date(2024, 6, 6, hour, minute, second); // Adjust the date as needed
+  }
+  
+  // Function to generate random outlier login time
+  function generateOutlierTime() {
+    const hour = faker.datatype.boolean() ? faker.datatype.number({ min: 0, max: 9 }) : faker.datatype.number({ min: 21, max: 23 });
+    const minute = faker.datatype.number({ min: 0, max: 59 });
+    const second = faker.datatype.number({ min: 0, max: 59 });
+  
+    return new Date(2024, 6, 6, hour, minute, second); // Adjust the date as needed
+  }
+  
+  // Function to generate fake login data
+  function generateLoginData(totalEntries, outlierPercentage) {
+    const loginData = [];
+  
+    for (let i = 0; i < totalEntries; i++) {
+      const isOutlier = faker.datatype.number({ min: 1, max: 100 }) <= outlierPercentage;
+      const loginTime = isOutlier ? generateOutlierTime() : generateRandomTime();
+      loginData.push({ loginTime: loginTime.toISOString() });
     }
-}
-
-// Function to print current elements in the queue
-function printQueue() {
-    console.log('Current queue elements:');
-    for (const element of queueElements) {
-        console.log(`Username: ${element.username}, Entitlement: ${element.entitlement}`);
-    }
-}
-
-// POST request handler
-app.post('/enqueue', (req, res) => {
-    const { username, entitlement } = req.body;
-    if (!username || !entitlement) {
-        return res.status(400).send('Username and entitlement are required');
-    }
-    enqueue(username, entitlement);
-    printQueue();
-    res.send('Request received and added to queue');
-});
-
-// Start the server
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+  
+    return loginData;
+  }
+  
+  
+  // Generate 100 fake login entries with 5% outliers
+  const fakeLoginData = generateLoginData(1000, 5);
+  console.log("Generated Login Data:", fakeLoginData);
+  
 ```
