@@ -3,6 +3,44 @@ use# Stellar-Classification
 This repository contaions the complete code for Stellar Classification - Stars, Galaxies and Quasars. An ensemble of multiple boosting and bagging classifiers and a snapshot ensembled ANN, with their weights being determined by an analysis of their respective confusion matrices, F-1 scores, and accuracies has been used.
 
 ```
+WITH FilteredAccess AS (
+    SELECT 
+        ae.accountID, 
+        ae.entitlementID, 
+        aa.accessTime
+    FROM 
+        AccountAccess aa
+    INNER JOIN 
+        AccountEntitlement ae ON aa.accountAccessID = ae.accountAccessID
+    WHERE 
+        aa.accessTime >= DATEADD(MONTH, -@x, GETDATE())
+),
+AggregatedAccess AS (
+    SELECT 
+        accountID, 
+        entitlementID, 
+        COUNT(*) AS accessCount,
+        MIN(accessTime) AS firstAccessTime,
+        MAX(accessTime) AS lastAccessTime
+    FROM 
+        FilteredAccess
+    GROUP BY 
+        accountID, 
+        entitlementID
+)
+SELECT 
+    accountID, 
+    entitlementID, 
+    accessCount,
+    firstAccessTime,
+    lastAccessTime
+FROM 
+    AggregatedAccess
+WHERE 
+    accessCount < @f;
+```
+
+```
      from flask import Flask, request, jsonify
 import pandas as pd
 from sklearn.ensemble import IsolationForest
