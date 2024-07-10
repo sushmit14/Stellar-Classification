@@ -3,41 +3,37 @@ use# Stellar-Classification
 This repository contaions the complete code for Stellar Classification - Stars, Galaxies and Quasars. An ensemble of multiple boosting and bagging classifiers and a snapshot ensembled ANN, with their weights being determined by an analysis of their respective confusion matrices, F-1 scores, and accuracies has been used.
 
 ```
-WITH FilteredAccess AS (
-    SELECT 
-        ae.accountID, 
-        ae.entitlementID, 
-        aa.accessTime
-    FROM 
-        AccountAccess aa
-    INNER JOIN 
-        AccountEntitlement ae ON aa.accountAccessID = ae.accountAccessID
-    WHERE 
-        aa.accessTime >= DATEADD(MONTH, -@x, GETDATE())
-),
-AggregatedAccess AS (
-    SELECT 
-        accountID, 
-        entitlementID, 
-        COUNT(*) AS accessCount,
-        MIN(accessTime) AS firstAccessTime,
-        MAX(accessTime) AS lastAccessTime
-    FROM 
-        FilteredAccess
-    GROUP BY 
-        accountID, 
-        entitlementID
-)
-SELECT 
-    accountID, 
-    entitlementID, 
-    accessCount,
-    firstAccessTime,
-    lastAccessTime
-FROM 
-    AggregatedAccess
-WHERE 
-    accessCount < @f;
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Sample dataframe with accessTime column
+data = {
+    'accessTime': pd.date_range(start='2023-01-01', periods=1000, freq='H')
+}
+df = pd.DataFrame(data)
+
+# Ensure accessTime is in datetime format (if not already)
+df['accessTime'] = pd.to_datetime(df['accessTime'])
+
+# Extract the date and hour from accessTime
+df['date'] = df['accessTime'].dt.date
+df['hour'] = df['accessTime'].dt.hour
+
+# Set up the plot
+plt.figure(figsize=(14, 8))
+sns.histplot(data=df, x='hour', hue='date', multiple='stack', palette='tab20', binwidth=1)
+
+# Customize the plot
+plt.title('Hourly Distribution of Access Times per Day')
+plt.xlabel('Hour of Day')
+plt.ylabel('Frequency')
+plt.xticks(range(0, 24))
+
+# Show the plot
+plt.legend(title='Date', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.show()
 ```
 
 ```
