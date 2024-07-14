@@ -5,6 +5,59 @@ This repository contaions the complete code for Stellar Classification - Stars, 
 ```
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
+
+# Load fake login data
+fake_login_data = pd.read_csv('fake_login_data.csv')
+fake_login_data['login_time'] = pd.to_datetime(fake_login_data['login_time'])
+
+# Feature engineering: convert to hours and extract date
+fake_login_data['hour'] = fake_login_data['login_time'].dt.hour
+fake_login_data['date'] = fake_login_data['login_time'].dt.date
+
+# Train Isolation Forest model
+model = IsolationForest(contamination=0.1)  # Adjust contamination based on expected outlier percentage
+model.fit(fake_login_data[['hour']])
+
+# Predict outliers
+fake_login_data['anomaly'] = model.predict(fake_login_data[['hour']])
+fake_login_data['anomaly'] = fake_login_data['anomaly'].map({1: 0, -1: 1})  # Map 1 to normal and -1 to anomaly
+
+# Save detected outliers to CSV
+detected_outliers = fake_login_data[fake_login_data['anomaly'] == 1]
+detected_outliers.to_csv('detected_outliers.csv', index=False)
+
+
+# Calculate a rolling mean for predictions (for the sake of this example)
+fake_login_data['rolling_mean'] = fake_login_data['hour'].rolling(window=10).mean()
+
+# Plot results with time on the x-axis
+plt.figure(figsize=(14, 8))
+
+# Plot true data
+plt.plot(fake_login_data.index, fake_login_data['hour'], label='True Data', color='blue')
+
+# Plot predictions (rolling mean)
+plt.plot(fake_login_data.index, fake_login_data['rolling_mean'], label='Predictions', color='orange')
+
+# Plot anomalies
+plt.scatter(detected_outliers.index, detected_outliers['hour'], color='red', s=100, label='Anomalies')
+
+plt.xlabel('Index')
+plt.ylabel('Hour of the Day')
+plt.title('Anomaly Detection using Isolation Forest')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()  # Adjust layout to prevent clipping of labels
+plt.show()
+
+print("Detected outliers saved to 'detected_outliers.csv'")
+```
+
+```
+import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Sample dataframe with accessTime column
